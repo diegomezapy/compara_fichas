@@ -1,162 +1,343 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Comparador de Textos — PARACEL</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comparador de Textos - PARACEL</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    :root {
-      --verde: #205527;
-      --hoja: #95BF5B;
-      --bg: #f4f7f4;
-      --white: #ffffff;
-      --alta: #d6f0c2;
-      --media: #fff8cc;
-      --baja: #fde8e8;
-      --border: #d0ddd0;
+    :root{
+      --verde:#205527;--hoja:#95BF5B;--bg:#f4f7f4;--white:#fff;
+      --alta:#d6f0c2;--media:#fff8cc;--baja:#fde8e8;
+      --alta-txt:#256b22;--media-txt:#7a6800;--baja-txt:#a02020;
+      --border:#d0ddd0;--shadow:0 2px 8px rgba(0,0,0,.08);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #222; min-height: 100vh; }
-    header { background: var(--verde); padding: 18px 24px 14px; text-align: center; }
-    header h1 { color: var(--white); font-size: 1.4rem; font-weight: 700; }
-    header p  { color: var(--hoja); font-size: 0.85rem; margin-top: 4px; }
-    main { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
-    .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
-    .col-label { font-size: 0.82rem; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-    textarea { width: 100%; height: 180px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.88rem; font-family: inherit; resize: vertical; background: var(--white); transition: border-color .2s; }
-    textarea:focus { outline: none; border-color: var(--hoja); }
-    textarea::placeholder { color: #aaa; }
-    .actions { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-    button { padding: 9px 26px; border: none; border-radius: 6px; font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: opacity .15s; }
-    button:hover { opacity: .87; }
-    #btn-comparar { background: var(--verde); color: var(--white); }
-    #btn-limpiar  { background: #ccc; color: #333; font-weight: 500; }
-    #status { font-size: 0.85rem; color: var(--verde); font-weight: 500; }
-    #status.error { color: #cc3300; }
-    .tabla-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--white); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    thead tr { background: var(--verde); color: var(--white); }
-    thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: .04em; }
-    thead th:first-child { width: 44px; text-align: center; }
-    thead th:last-child  { width: 96px; text-align: center; }
-    tbody tr:nth-child(even) { background: #f9fbf9; }
-    tbody tr.alta  td { background: var(--alta) !important; }
-    tbody tr.media td { background: var(--media) !important; }
-    tbody tr.baja  td { background: var(--baja) !important; }
-    tbody td { padding: 9px 14px; border-bottom: 1px solid #eee; vertical-align: middle; }
-    tbody td:first-child { text-align: center; color: #888; font-size: 0.8rem; }
-    .pct { text-align: center; font-weight: 700; font-size: 0.9rem; }
-    .pct.alta  { color: #256b22; }
-    .pct.media { color: #7a6800; }
-    .pct.baja  { color: #a02020; }
-    .leyenda { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; font-size: 0.8rem; }
-    .leyenda span { padding: 3px 12px; border-radius: 4px; border: 1px solid #ccc; font-weight: 500; }
-    @media (max-width: 640px) { .inputs { grid-template-columns: 1fr; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#222;min-height:100vh}
+    header{background:var(--verde);padding:16px 24px 12px;text-align:center}
+    header h1{color:#fff;font-size:1.35rem;font-weight:700}
+    header p{color:var(--hoja);font-size:.82rem;margin-top:3px}
+    main{max-width:1280px;margin:0 auto;padding:18px 16px}
+    .inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
+    .col-label{font-size:.78rem;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+    textarea{width:100%;height:160px;padding:9px 11px;border:1.5px solid var(--border);border-radius:6px;font-size:.86rem;font-family:inherit;resize:vertical;background:#fff;transition:border-color .2s}
+    textarea:focus{outline:none;border-color:var(--hoja)}
+    textarea::placeholder{color:#bbb}
+    .opciones{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;box-shadow:var(--shadow)}
+    .opciones label{font-size:.8rem;color:#555;font-weight:600}
+    .opciones select{padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:.82rem;font-family:inherit;background:#fff}
+    .sep{color:#ccc;font-size:1.2rem;margin:0 4px}
+    .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .btn{padding:8px 20px;border:none;border-radius:6px;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;display:flex;align-items:center;gap:6px}
+    .btn:hover{opacity:.88}.btn:active{transform:scale(.97)}
+    .btn-primary{background:var(--verde);color:#fff}
+    .btn-excel{background:#1d6f42;color:#fff}
+    .btn-copy{background:#0066cc;color:#fff}
+    .btn-clear{background:#e8e8e8;color:#555;font-weight:500}
+    .btn-secondary{background:#ddd;color:#333;font-weight:500}
+    #status{font-size:.82rem;color:var(--verde);font-weight:500;margin-left:4px}
+    #status.error{color:#cc3300}
+    .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .filtros{display:flex;gap:6px}
+    .filtro-btn{padding:4px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;background:#fff;transition:all .15s}
+    .filtro-btn.active-alta{background:var(--alta);border-color:#8dc86a;color:var(--alta-txt)}
+    .filtro-btn.active-media{background:var(--media);border-color:#d4b800;color:var(--media-txt)}
+    .filtro-btn.active-baja{background:var(--baja);border-color:#e09090;color:var(--baja-txt)}
+    .filtro-btn.active-all{background:var(--verde);border-color:var(--verde);color:#fff}
+    #buscador{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:.82rem;font-family:inherit;width:220px;outline:none}
+    #buscador:focus{border-color:var(--hoja)}
+    .stats{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+    .stat-card{flex:1;min-width:100px;padding:10px 14px;border-radius:8px;text-align:center;border:1px solid transparent;box-shadow:var(--shadow)}
+    .stat-card .num{font-size:1.6rem;font-weight:800;line-height:1}
+    .stat-card .lbl{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+    .sc-alta{background:var(--alta);border-color:#8dc86a;color:var(--alta-txt)}
+    .sc-media{background:var(--media);border-color:#d4b800;color:var(--media-txt)}
+    .sc-baja{background:var(--baja);border-color:#e09090;color:var(--baja-txt)}
+    .sc-total{background:#eef2ee;border-color:#c0d0c0;color:#334433}
+    .tabla-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow)}
+    table{width:100%;border-collapse:collapse;font-size:.86rem}
+    thead tr{background:var(--verde);color:#fff}
+    thead th{padding:10px 13px;text-align:left;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;cursor:pointer;user-select:none;transition:background .15s}
+    thead th:hover{background:#2d7038}
+    thead th.sorted-asc::after{content:' \25b2';font-size:.7rem}
+    thead th.sorted-desc::after{content:' \25bc';font-size:.7rem}
+    thead th:first-child{width:50px;text-align:center;cursor:default}
+    thead th:last-child{width:100px;text-align:center}
+    tbody tr.alta td{background:var(--alta)}
+    tbody tr.media td{background:var(--media)}
+    tbody tr.baja td{background:var(--baja)}
+    tbody td{padding:8px 13px;border-bottom:1px solid #eee;vertical-align:middle}
+    tbody td:first-child{text-align:center;color:#999;font-size:.78rem}
+    .pct{text-align:center;font-weight:800;font-size:.88rem}
+    .pct.alta{color:var(--alta-txt)}.pct.media{color:var(--media-txt)}.pct.baja{color:var(--baja-txt)}
+    .bar-wrap{display:flex;align-items:center;gap:7px;margin-top:3px}
+    .bar{height:7px;border-radius:4px;min-width:4px}
+    .bar.alta{background:var(--alta-txt)}.bar.media{background:#c8a800}.bar.baja{background:var(--baja-txt)}
+    mark{background:#ffe066;padding:0 1px;border-radius:2px}
+    .leyenda{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:.78rem}
+    .leyenda span{padding:3px 11px;border-radius:4px;border:1px solid #ccc;font-weight:500}
+    .rank{display:inline-block;background:var(--verde);color:#fff;border-radius:10px;font-size:.68rem;font-weight:700;padding:1px 6px;margin-right:4px;vertical-align:middle}
+    .match-item{margin-bottom:4px}
+    #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:#333;color:#fff;padding:10px 22px;border-radius:24px;font-size:.85rem;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;z-index:999}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:640px){.inputs{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 <header>
   <h1>Comparador de Textos</h1>
-  <p>Pega dos listas copiadas desde Excel y encuentra las coincidencias mas similares</p>
+  <p>Pega dos listas desde Excel &mdash; encuentra las coincidencias mas similares</p>
 </header>
 <main>
   <div class="inputs">
     <div>
-      <div class="col-label">Columna 1 — textos a buscar</div>
+      <div class="col-label">Columna 1 &mdash; textos a buscar</div>
       <textarea id="col1" placeholder="Pega aqui los textos (uno por linea)"></textarea>
     </div>
     <div>
-      <div class="col-label">Columna 2 — textos de referencia</div>
+      <div class="col-label">Columna 2 &mdash; textos de referencia</div>
       <textarea id="col2" placeholder="Pega aqui los textos de referencia (uno por linea)"></textarea>
     </div>
   </div>
+  <div class="opciones">
+    <label>Top coincidencias por fila:</label>
+    <select id="topN">
+      <option value="1" selected>1 &mdash; solo la mejor</option>
+      <option value="2">2 mejores</option>
+      <option value="3">3 mejores</option>
+    </select>
+    <span class="sep">|</span>
+    <label>Orden inicial:</label>
+    <select id="ordenDefault">
+      <option value="original">Orden original (como pegaste)</option>
+      <option value="desc">Mayor similitud primero</option>
+    </select>
+  </div>
   <div class="actions">
-    <button id="btn-comparar" onclick="comparar()">COMPARAR</button>
-    <button id="btn-limpiar"  onclick="limpiar()">Limpiar</button>
+    <button class="btn btn-primary" onclick="comparar()">&#128269; COMPARAR</button>
+    <button class="btn btn-excel"   onclick="exportarExcel()">&#128196; Exportar Excel</button>
+    <button class="btn btn-copy"    onclick="copiarPortapapeles()">&#128203; Copiar tabla</button>
+    <button class="btn btn-clear"   onclick="limpiar()">&#10005; Limpiar</button>
     <span id="status"></span>
+  </div>
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat-card sc-total"><div class="num" id="st-total">0</div><div class="lbl">Total</div></div>
+    <div class="stat-card sc-alta"><div class="num" id="st-alta">0</div><div class="lbl">&#9650; Alta (&ge;80%)</div></div>
+    <div class="stat-card sc-media"><div class="num" id="st-media">0</div><div class="lbl">&#9654; Media (50-79%)</div></div>
+    <div class="stat-card sc-baja"><div class="num" id="st-baja">0</div><div class="lbl">&#9660; Baja (&lt;50%)</div></div>
+  </div>
+  <div class="toolbar" id="toolbar" style="display:none">
+    <div class="filtros">
+      <button class="filtro-btn active-all" onclick="setFiltro('all',this)">Todos</button>
+      <button class="filtro-btn" onclick="setFiltro('alta',this)">Alta</button>
+      <button class="filtro-btn" onclick="setFiltro('media',this)">Media</button>
+      <button class="filtro-btn" onclick="setFiltro('baja',this)">Baja</button>
+    </div>
+    <input id="buscador" type="text" placeholder="&#128269; Buscar en resultados..." oninput="filtrarBusqueda()"/>
+    <button class="btn btn-secondary" style="font-size:.78rem;padding:5px 12px" onclick="resetOrden()">&#8635; Orden original</button>
   </div>
   <div class="tabla-wrap">
     <table id="tabla">
       <thead>
         <tr>
           <th>#</th>
-          <th>Texto — Columna 1</th>
-          <th>Mejor coincidencia — Columna 2</th>
-          <th>Similitud</th>
+          <th onclick="sortCol(1)" id="th1">Texto &mdash; Columna 1</th>
+          <th onclick="sortCol(2)" id="th2">Mejor coincidencia &mdash; Columna 2</th>
+          <th onclick="sortCol(3)" id="th3" style="text-align:center">Similitud</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
     </table>
   </div>
   <div class="leyenda">
-    <span style="background:var(--alta)">&#9632; &ge; 80% Alta</span>
+    <span style="background:var(--alta)">&#9632; &ge;80% Alta</span>
     <span style="background:var(--media)">&#9632; 50-79% Media</span>
-    <span style="background:var(--baja)">&#9632; &lt; 50% Baja</span>
+    <span style="background:var(--baja)">&#9632; &lt;50% Baja</span>
+    <span style="background:#eee">Click en cabeceras para ordenar</span>
   </div>
 </main>
+<div id="toast"></div>
 <script>
-function normalizar(s) {
+function normalizar(s){
   return s.toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\w\s]/g, ' ')
-    .replace(/\s+/g, ' ').trim();
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+function similitudLCS(a,b){
+  a=normalizar(a);b=normalizar(b);
+  if(!a&&!b)return 100;if(!a||!b)return 0;
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},()=>new Uint16Array(n+1));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]+1:Math.max(dp[i-1][j],dp[i][j-1]);
+  return Math.round((2*dp[m][n]/(m+n))*1000)/10;
 }
 
-function similitudLCS(a, b) {
-  a = normalizar(a);
-  b = normalizar(b);
-  if (!a && !b) return 100;
-  if (!a || !b) return 0;
-  const m = a.length, n = b.length;
-  const dp = Array.from({length: m + 1}, () => new Uint16Array(n + 1));
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
-    }
-  }
-  return Math.round((2 * dp[m][n] / (m + n)) * 1000) / 10;
-}
+let filas=[];
+let sortDir={};
+let filtroActivo='all';
 
-function comparar() {
-  const lista1 = document.getElementById('col1').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const lista2 = document.getElementById('col2').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const status = document.getElementById('status');
-  if (!lista1.length || !lista2.length) {
-    status.textContent = 'Pega texto en ambas columnas.';
-    status.className = 'error';
-    return;
-  }
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  const resultados = lista1.map((texto1) => {
-    let mejorScore = -1, mejorMatch = '';
-    lista2.forEach(texto2 => {
-      const sc = similitudLCS(texto1, texto2);
-      if (sc > mejorScore) { mejorScore = sc; mejorMatch = texto2; }
-    });
-    return { texto1, mejorMatch, mejorScore };
+function comparar(){
+  const lista1=document.getElementById('col1').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const lista2=document.getElementById('col2').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const status=document.getElementById('status');
+  if(!lista1.length||!lista2.length){status.textContent='Pega texto en ambas columnas.';status.className='error';return;}
+  const topN=parseInt(document.getElementById('topN').value);
+  filas=lista1.map((texto1,idx)=>{
+    const scored=lista2.map(t=>({texto2:t,score:similitudLCS(texto1,t)})).sort((a,b)=>b.score-a.score);
+    const matches=scored.slice(0,topN).map(m=>({texto2:m.texto2,score:m.score,nivel:m.score>=80?'alta':m.score>=50?'media':'baja'}));
+    return{texto1,matches,originalIdx:idx};
   });
-  resultados.sort((a, b) => b.mejorScore - a.mejorScore);
-  resultados.forEach(({ texto1, mejorMatch, mejorScore }, i) => {
-    const nivel = mejorScore >= 80 ? 'alta' : mejorScore >= 50 ? 'media' : 'baja';
-    const tr = document.createElement('tr');
-    tr.className = nivel;
-    tr.innerHTML = '<td>'+(i+1)+'</td><td>'+esc(texto1)+'</td><td>'+esc(mejorMatch)+'</td><td class="pct '+nivel+'">'+mejorScore+' %</td>';
+  if(document.getElementById('ordenDefault').value==='desc')
+    filas.sort((a,b)=>b.matches[0].score-a.matches[0].score);
+  sortDir={};
+  ['th1','th2','th3'].forEach(id=>document.getElementById(id).className='');
+  renderTabla();
+  actualizarStats();
+  document.getElementById('stats').style.display='flex';
+  document.getElementById('toolbar').style.display='flex';
+  filtroActivo='all';
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.className='filtro-btn');
+  document.querySelector('.filtro-btn').className='filtro-btn active-all';
+  document.getElementById('buscador').value='';
+  status.textContent='\u2713  '+lista1.length+' textos vs '+lista2.length+' referencias';
+  status.className='';
+}
+
+function renderTabla(termino){
+  termino=termino||'';
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  filas.forEach((f)=>{
+    if(filtroActivo!=='all'&&f.matches[0].nivel!==filtroActivo)return;
+    const hayTermino=termino.length>2;
+    if(hayTermino){
+      const t=normalizar(termino);
+      const en=normalizar(f.texto1)+' '+f.matches.map(m=>normalizar(m.texto2)).join(' ');
+      if(!en.includes(t))return;
+    }
+    const topMatch=f.matches[0];
+    const nivelRow=topMatch.nivel;
+    const tr=document.createElement('tr');
+    tr.className=nivelRow;
+    const matchHtml=f.matches.map((m,mi)=>{
+      const bw=Math.round(m.score*1.8);
+      return '<div class="match-item">'+(f.matches.length>1?'<span class="rank">#'+(mi+1)+'</span>':'')+esc(m.texto2)+'<div class="bar-wrap"><div class="bar '+m.nivel+'" style="width:'+bw+'px;max-width:180px"></div><span style="font-size:.72rem;color:#666">'+m.score+'%</span></div></div>';
+    }).join('');
+    const pctCell=f.matches.length===1
+      ?'<td class="pct '+nivelRow+'">'+topMatch.score+'%</td>'
+      :'<td>'+f.matches.map(m=>'<div class="pct '+m.nivel+'" style="font-size:.8rem">'+m.score+'%</div>').join('')+'</td>';
+    const t1=hayTermino?resaltar(f.texto1,termino):esc(f.texto1);
+    tr.innerHTML='<td>'+(f.originalIdx+1)+'</td><td>'+t1+'</td><td>'+matchHtml+'</td>'+pctCell;
     tbody.appendChild(tr);
   });
-  status.textContent = lista1.length+' textos comparados contra '+lista2.length+' referencias.';
-  status.className = '';
 }
 
-function limpiar() {
-  document.getElementById('col1').value = '';
-  document.getElementById('col2').value = '';
-  document.getElementById('tbody').innerHTML = '';
-  document.getElementById('status').textContent = '';
+function actualizarStats(){
+  const alta=filas.filter(f=>f.matches[0].nivel==='alta').length;
+  const media=filas.filter(f=>f.matches[0].nivel==='media').length;
+  const baja=filas.filter(f=>f.matches[0].nivel==='baja').length;
+  document.getElementById('st-total').textContent=filas.length;
+  document.getElementById('st-alta').textContent=alta;
+  document.getElementById('st-media').textContent=media;
+  document.getElementById('st-baja').textContent=baja;
 }
 
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function sortCol(col){
+  const dir=sortDir[col]==='asc'?'desc':'asc';
+  sortDir={[col]:dir};
+  ['th1','th2','th3'].forEach((id,i)=>{
+    document.getElementById(id).className=i+1===col?(dir==='asc'?'sorted-asc':'sorted-desc'):'';
+  });
+  filas.sort((a,b)=>{
+    let va,vb;
+    if(col===1){va=normalizar(a.texto1);vb=normalizar(b.texto1);}
+    else if(col===2){va=normalizar(a.matches[0].texto2);vb=normalizar(b.matches[0].texto2);}
+    else{va=a.matches[0].score;vb=b.matches[0].score;}
+    if(typeof va==='number')return dir==='asc'?va-vb:vb-va;
+    return dir==='asc'?va.localeCompare(vb,'es'):vb.localeCompare(va,'es');
+  });
+  renderTabla(document.getElementById('buscador').value);
+}
+
+function resetOrden(){
+  filas.sort((a,b)=>a.originalIdx-b.originalIdx);
+  sortDir={};
+  ['th1','th2','th3'].forEach(id=>document.getElementById(id).className='');
+  renderTabla(document.getElementById('buscador').value);
+}
+
+function setFiltro(nivel,btn){
+  filtroActivo=nivel;
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.className='filtro-btn');
+  btn.className='filtro-btn active-'+nivel;
+  renderTabla(document.getElementById('buscador').value);
+}
+
+function filtrarBusqueda(){renderTabla(document.getElementById('buscador').value);}
+
+function exportarExcel(){
+  if(!filas.length){toast('Primero compara textos.');return;}
+  const topN=parseInt(document.getElementById('topN').value);
+  const hdr=['#','Texto Columna 1'];
+  for(let i=0;i<topN;i++)hdr.push('Coincidencia '+(i+1));
+  for(let i=0;i<topN;i++)hdr.push('Similitud '+(i+1));
+  const rows=[hdr];
+  filas.forEach(f=>{
+    const r=[f.originalIdx+1,f.texto1];
+    for(let i=0;i<topN;i++)r.push(f.matches[i]?f.matches[i].texto2:'');
+    for(let i=0;i<topN;i++)r.push(f.matches[i]?f.matches[i].score/100:'');
+    rows.push(r);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const sc=2+topN;
+  for(let i=0;i<topN;i++)for(let r=1;r<rows.length;r++){
+    const addr=XLSX.utils.encode_cell({r,c:sc+i});
+    if(ws[addr])ws[addr].z='0.0%';
+  }
+  ws['!cols']=[{wch:5},{wch:55},...Array(topN).fill({wch:50}),...Array(topN).fill({wch:12})];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Comparacion');
+  XLSX.writeFile(wb,'comparacion_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Excel descargado.');
+}
+
+function copiarPortapapeles(){
+  if(!filas.length){toast('Primero compara textos.');return;}
+  const topN=parseInt(document.getElementById('topN').value);
+  const hdr=['#','Texto Columna 1'];
+  for(let i=0;i<topN;i++)hdr.push('Coincidencia '+(i+1));
+  for(let i=0;i<topN;i++)hdr.push('Similitud '+(i+1));
+  const lineas=filas.map(f=>{
+    const r=[f.originalIdx+1,f.texto1];
+    for(let i=0;i<topN;i++)r.push(f.matches[i]?f.matches[i].texto2:'');
+    for(let i=0;i<topN;i++)r.push(f.matches[i]?f.matches[i].score+'%':'');
+    return r.join('\t');
+  });
+  navigator.clipboard.writeText([hdr.join('\t'),...lineas].join('\n'))
+    .then(()=>toast('Copiado. Pega en Excel con Ctrl+V.'))
+    .catch(()=>toast('Error al copiar. Usa Exportar Excel.'));
+}
+
+function limpiar(){
+  document.getElementById('col1').value='';
+  document.getElementById('col2').value='';
+  document.getElementById('tbody').innerHTML='';
+  document.getElementById('status').textContent='';
+  document.getElementById('stats').style.display='none';
+  document.getElementById('toolbar').style.display='none';
+  filas=[];
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function resaltar(texto,termino){
+  const re=new RegExp('('+termino.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  return esc(texto).replace(re,'<mark>$1</mark>');
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3200);
 }
 </script>
 </body>
