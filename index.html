@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comparador de Textos — PARACEL</title>
+  <style>
+    :root {
+      --verde: #205527;
+      --hoja: #95BF5B;
+      --bg: #f4f7f4;
+      --white: #ffffff;
+      --alta: #d6f0c2;
+      --media: #fff8cc;
+      --baja: #fde8e8;
+      --border: #d0ddd0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #222; min-height: 100vh; }
+    header { background: var(--verde); padding: 18px 24px 14px; text-align: center; }
+    header h1 { color: var(--white); font-size: 1.4rem; font-weight: 700; }
+    header p  { color: var(--hoja); font-size: 0.85rem; margin-top: 4px; }
+    main { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+    .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+    .col-label { font-size: 0.82rem; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+    textarea { width: 100%; height: 180px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.88rem; font-family: inherit; resize: vertical; background: var(--white); transition: border-color .2s; }
+    textarea:focus { outline: none; border-color: var(--hoja); }
+    textarea::placeholder { color: #aaa; }
+    .actions { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    button { padding: 9px 26px; border: none; border-radius: 6px; font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+    button:hover { opacity: .87; }
+    #btn-comparar { background: var(--verde); color: var(--white); }
+    #btn-limpiar  { background: #ccc; color: #333; font-weight: 500; }
+    #status { font-size: 0.85rem; color: var(--verde); font-weight: 500; }
+    #status.error { color: #cc3300; }
+    .tabla-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--white); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead tr { background: var(--verde); color: var(--white); }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: .04em; }
+    thead th:first-child { width: 44px; text-align: center; }
+    thead th:last-child  { width: 96px; text-align: center; }
+    tbody tr:nth-child(even) { background: #f9fbf9; }
+    tbody tr.alta  td { background: var(--alta) !important; }
+    tbody tr.media td { background: var(--media) !important; }
+    tbody tr.baja  td { background: var(--baja) !important; }
+    tbody td { padding: 9px 14px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tbody td:first-child { text-align: center; color: #888; font-size: 0.8rem; }
+    .pct { text-align: center; font-weight: 700; font-size: 0.9rem; }
+    .pct.alta  { color: #256b22; }
+    .pct.media { color: #7a6800; }
+    .pct.baja  { color: #a02020; }
+    .leyenda { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; font-size: 0.8rem; }
+    .leyenda span { padding: 3px 12px; border-radius: 4px; border: 1px solid #ccc; font-weight: 500; }
+    @media (max-width: 640px) { .inputs { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Comparador de Textos</h1>
+  <p>Pega dos listas copiadas desde Excel y encuentra las coincidencias mas similares</p>
+</header>
+<main>
+  <div class="inputs">
+    <div>
+      <div class="col-label">Columna 1 — textos a buscar</div>
+      <textarea id="col1" placeholder="Pega aqui los textos (uno por linea)"></textarea>
+    </div>
+    <div>
+      <div class="col-label">Columna 2 — textos de referencia</div>
+      <textarea id="col2" placeholder="Pega aqui los textos de referencia (uno por linea)"></textarea>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="btn-comparar" onclick="comparar()">COMPARAR</button>
+    <button id="btn-limpiar"  onclick="limpiar()">Limpiar</button>
+    <span id="status"></span>
+  </div>
+  <div class="tabla-wrap">
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Texto — Columna 1</th>
+          <th>Mejor coincidencia — Columna 2</th>
+          <th>Similitud</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="leyenda">
+    <span style="background:var(--alta)">&#9632; &ge; 80% Alta</span>
+    <span style="background:var(--media)">&#9632; 50-79% Media</span>
+    <span style="background:var(--baja)">&#9632; &lt; 50% Baja</span>
+  </div>
+</main>
+<script>
+function normalizar(s) {
+  return s.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function similitudLCS(a, b) {
+  a = normalizar(a);
+  b = normalizar(b);
+  if (!a && !b) return 100;
+  if (!a || !b) return 0;
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => new Uint16Array(n + 1));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+    }
+  }
+  return Math.round((2 * dp[m][n] / (m + n)) * 1000) / 10;
+}
+
+function comparar() {
+  const lista1 = document.getElementById('col1').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const lista2 = document.getElementById('col2').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const status = document.getElementById('status');
+  if (!lista1.length || !lista2.length) {
+    status.textContent = 'Pega texto en ambas columnas.';
+    status.className = 'error';
+    return;
+  }
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  lista1.forEach((texto1, i) => {
+    let mejorScore = -1, mejorMatch = '';
+    lista2.forEach(texto2 => {
+      const sc = similitudLCS(texto1, texto2);
+      if (sc > mejorScore) { mejorScore = sc; mejorMatch = texto2; }
+    });
+    const nivel = mejorScore >= 80 ? 'alta' : mejorScore >= 50 ? 'media' : 'baja';
+    const tr = document.createElement('tr');
+    tr.className = nivel;
+    tr.innerHTML = '<td>'+(i+1)+'</td><td>'+esc(texto1)+'</td><td>'+esc(mejorMatch)+'</td><td class="pct '+nivel+'">'+mejorScore+' %</td>';
+    tbody.appendChild(tr);
+  });
+  status.textContent = lista1.length+' textos comparados contra '+lista2.length+' referencias.';
+  status.className = '';
+}
+
+function limpiar() {
+  document.getElementById('col1').value = '';
+  document.getElementById('col2').value = '';
+  document.getElementById('tbody').innerHTML = '';
+  document.getElementById('status').textContent = '';
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
