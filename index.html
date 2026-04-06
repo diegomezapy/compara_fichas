@@ -128,12 +128,16 @@ function comparar() {
   }
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
-  lista1.forEach((texto1, i) => {
+  const resultados = lista1.map((texto1) => {
     let mejorScore = -1, mejorMatch = '';
     lista2.forEach(texto2 => {
       const sc = similitudLCS(texto1, texto2);
       if (sc > mejorScore) { mejorScore = sc; mejorMatch = texto2; }
     });
+    return { texto1, mejorMatch, mejorScore };
+  });
+  resultados.sort((a, b) => b.mejorScore - a.mejorScore);
+  resultados.forEach(({ texto1, mejorMatch, mejorScore }, i) => {
     const nivel = mejorScore >= 80 ? 'alta' : mejorScore >= 50 ? 'media' : 'baja';
     const tr = document.createElement('tr');
     tr.className = nivel;
